@@ -1,4 +1,5 @@
 local newThread = Citizen.CreateThread
+local notifyPrefix = "[~y~NC~w~] "
 Sn = {}
 
 Sn.init = function()
@@ -24,7 +25,7 @@ end
 function Sn:notify(message,showPrefix)
   if showPrefix then 
 	SetNotificationTextEntry("STRING")
-	AddTextComponentString('[~y~NC~w~] ' .. message)
+	AddTextComponentString(notifyPrefix .. message)
 	DrawNotification(true, false)
   else
 	SetNotificationTextEntry("STRING")
