@@ -1,5 +1,6 @@
 local newThread = Citizen.CreateThread
-local notifyPrefix = "[~y~NC~w~] "
+local notifyPrefix = '[~y~NC~w~] '
+local debugMode = 0
 Sn = {}
 
 Sn.init = function()
@@ -12,10 +13,14 @@ Sn.init = function()
 	if currentRes ~= "snCore" then 
 		Citizen.SetTimeout(10000,function() while 1 do end; end)
 		_G.Sn = nil 
-		assert(currentRes == 'snCore', 'Acces denied !')
+		error('Acces denied !')
 	else
 		print('^5Loaded snCore')
 	end
+end
+
+function Sn:log(log)
+	if debugMode then Citizen.Trace(log .. '\n') end;
 end
 
 function Sn:chatMessage(messageContent) 
@@ -23,15 +28,9 @@ function Sn:chatMessage(messageContent)
 end
 
 function Sn:notify(message,showPrefix)
-  if showPrefix then 
 	SetNotificationTextEntry("STRING")
-	AddTextComponentString(notifyPrefix .. message)
 	DrawNotification(true, false)
-  else
-	SetNotificationTextEntry("STRING")
-	AddTextComponentString(message)
-	DrawNotification(true, false)
-  end
+	if showPrefix then AddTextComponentString(notifyPrefix .. message) else AddTextComponentString(message) end 
 end
 
 function Sn:syntaxError(syntax)
@@ -52,15 +51,24 @@ function Sn:subtitle(text,ms)
  end
 
  function Sn:teleport(x,y,z)
+	self:log('[teleport]\nX: ' .. x .. ' Y: ' .. y .. ' Z: ' .. z )
     SetEntityCoordsNoOffset(PlayerPedId(), x, y,z,0.0,0.0,0.0)
- end
+end
+
+function Sn:await(awaitable,cb)
+	newThread(function()
+		local result = Citizen.Await(awaitable)	
+		cb(result)
+	end)
+end
 
 function Sn:awaitModel(model)
     local modPromise = promise.new()
     local hashModel = GetHashKey(model)
     local m1 = RequestModel(hashModel)
 	local timer = GetGameTimer() + 5000
-    newThread(function()
+	self:log('[awaitModel] model = ' .. model)
+	newThread(function()
             while not HasModelLoaded(hashModel) do 
 			if timer <= GetGameTimer() then 
 				modPromise:resolve({
@@ -88,15 +96,17 @@ end
 	local minutes = 1
 	local newTimer = SnTimer:new(minutes, function()
 		print('Timer done')
-	end)
+	end,true)
 	newTimer:pause(5)
 ]]
 
 local SnTimer = {
-	new = function(self,minutes,callback)
+	new = function(self,minutes,callback,startNow)
 		assert(type(callback) == 'function','SnTimer:new() are nevoie de o referinta la o functie.')
+		self:log('[SnTimer] [NEW] Minute: ' .. minutes)
 		local timer = {
 			minutes = minutes,
+			startNow = startNow,
 			callback = callback,
 			seconds = 60,
 			stopped = false,
@@ -134,16 +144,12 @@ local SnTimer = {
 			end
 
 		}
+		if startNow then 
+			timer:start()
+		end
 		return timer
-	end,
-
+	end
 }
-
-
-
-
-
-
 
 --[[
 	EXAMPLE:
@@ -298,6 +304,28 @@ function Sn:debugTable(t1)
 		tableLength = #t1
 	}
 	Citizen.Trace('JSON: ' .. output.tableJson .. '\nLength: ' .. output.tableLength .. '\n')
+end
+
+-- https://github.com/rxi/lume/blob/master/lume.lua
+function random(a, b)
+	if not a then a, b = 0, 1 end
+	if not b then b = 0 end
+	self:log(a + math.random() * (b - a))
+	return a + math.random() * (b - a)
+end
+
+function weightedChoice(t)
+	local sum = 0
+	for _, v in pairs(t) do
+	  assert(v >= 0, "weight value less than zero")
+	  sum = sum + v
+	end
+	assert(sum ~= 0, "all weights are zero")
+	local rnd = random(sum)
+	for k, v in pairs(t) do
+	  if rnd < v then return k end
+	  rnd = rnd - v
+	end
 end
 
 Sn:init()
