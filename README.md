@@ -8,4 +8,4 @@ FiveM utils.
 
 
 
-NOTE: Probabil ai vrea sa stergi linile 11 - 17
+NOTE: Probabil ai vrea sa stergi linile 11 - 17, ah si nu toate sunt facute de mine. 
